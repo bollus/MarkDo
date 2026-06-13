@@ -57,6 +57,7 @@ let ocrSelectionWindow = null;
 let pendingDeadlinePayload = null;
 let screenshotModule = null;
 let sharpModule = null;
+let isAppQuitting = false;
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
@@ -267,6 +268,17 @@ function createMainWindow() {
   mainWindow.on('closed', () => {
     log('mainWindow closed');
     mainWindow = null;
+    if (!isAppQuitting) {
+      isAppQuitting = true;
+      for (const noteWindow of noteWindows.values()) {
+        if (!noteWindow.isDestroyed()) noteWindow.close();
+      }
+      noteWindows.clear();
+      if (quickAddWindow && !quickAddWindow.isDestroyed()) quickAddWindow.close();
+      if (deadlineWindow && !deadlineWindow.isDestroyed()) deadlineWindow.close();
+      if (ocrSelectionWindow && !ocrSelectionWindow.isDestroyed()) ocrSelectionWindow.close();
+      app.quit();
+    }
   });
 }
 
@@ -1182,6 +1194,7 @@ ipcMain.on('note:save', (event, payload) => {
 });
 
 app.whenReady().then(() => {
+  isAppQuitting = false;
   log('app ready');
   registerRendererProtocol();
   createMainWindow();
@@ -1190,7 +1203,10 @@ app.whenReady().then(() => {
 }).catch((error) => log('app.whenReady failed', error));
 
 app.on('second-instance', () => {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    if (app.isReady() && !isAppQuitting) createMainWindow();
+    return;
+  }
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
@@ -1207,5 +1223,6 @@ app.on('window-all-closed', () => {
 });
 
 app.on('will-quit', () => {
+  isAppQuitting = true;
   globalShortcut.unregisterAll();
 });
