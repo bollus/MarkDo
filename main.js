@@ -1,10 +1,9 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, protocol, screen } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs/promises');
 const fsSync = require('fs');
 const os = require('os');
 const path = require('path');
-const { pathToFileURL } = require('url');
 
 const APP_DATA_DIR = path.join(app.getPath('appData'), 'MarkDo');
 const LOG_FILE = path.join(APP_DATA_DIR, 'markdo.log');
@@ -63,7 +62,20 @@ const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   log('second instance detected, quitting');
   app.quit();
+  process.exit(0);
 }
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'markdo',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true
+    }
+  }
+]);
 
 function emitOcrStatus(message) {
   mainWindow?.webContents.send('ocr:status', message);
@@ -100,10 +112,43 @@ function rendererUrl(page = 'index.html') {
 }
 
 function rendererFile(page = 'index.html') {
+  if (app.isPackaged) return path.join(process.resourcesPath, 'dist', page);
   return path.join(__dirname, 'dist', page);
 }
 
+function rendererBaseDir() {
+  if (app.isPackaged) return path.join(process.resourcesPath, 'dist');
+  return path.join(__dirname, 'dist');
+}
+
+function registerRendererProtocol() {
+  const ok = protocol.registerFileProtocol('markdo', (request, callback) => {
+    const url = new URL(request.url);
+    const baseDir = path.normalize(rendererBaseDir());
+    let requestedPath = decodeURIComponent(url.pathname || '/index.html');
+    if (requestedPath === '/') requestedPath = '/index.html';
+    requestedPath = requestedPath.replace(/^\/+/, '');
+
+    const filePath = path.normalize(path.join(baseDir, requestedPath));
+    const baseWithSep = `${baseDir}${path.sep}`;
+    if (filePath !== baseDir && !filePath.startsWith(baseWithSep)) {
+      callback({ error: -10 });
+      return;
+    }
+
+    if (!fsSync.existsSync(filePath)) {
+      log(`renderer protocol missing file: ${filePath}`);
+      callback({ error: -6 });
+      return;
+    }
+
+    callback({ path: filePath });
+  });
+  log(`registerRendererProtocol ok=${ok}`);
+}
+
 function iconPath() {
+  if (app.isPackaged) return path.join(process.resourcesPath, 'icon.ico');
   return path.join(__dirname, 'build', 'icon.ico');
 }
 
@@ -117,7 +162,7 @@ function loadRenderer(window, page = 'index.html', query = null) {
     window.loadURL(url.toString()).catch((error) => log(`loadURL failed: ${url.toString()}`, error));
   } else {
     const file = rendererFile(page);
-    const url = pathToFileURL(file);
+    const url = new URL(`markdo://renderer/${page}`);
     if (query) {
       Object.entries(query).forEach(([key, value]) => url.searchParams.set(key, value));
     }
@@ -938,12 +983,7 @@ function createNoteWindow(todo) {
 
   noteWindow.setAlwaysOnTop(true, 'screen-saver');
   noteWindow.moveTop();
-  const devUrl = rendererUrl('note.html');
-  if (devUrl) {
-    noteWindow.loadURL(devUrl);
-  } else {
-    noteWindow.loadFile(rendererFile('note.html'));
-  }
+  loadRenderer(noteWindow, 'note.html');
   noteWindow.webContents.once('did-finish-load', async () => {
     await Promise.race([
       noteWindow.webContents.executeJavaScript('document.fonts ? document.fonts.ready.then(() => true) : true').catch(() => true),
@@ -1059,6 +1099,7 @@ ipcMain.on('note:save', (event, payload) => {
 
 app.whenReady().then(() => {
   log('app ready');
+  registerRendererProtocol();
   createMainWindow();
   registerOcrShortcut();
   registerQuickAddShortcut();

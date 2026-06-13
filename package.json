@@ -33,6 +33,14 @@
     ],
     "extraResources": [
       {
+        "from": "dist",
+        "to": "dist"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      },
+      {
         "from": "vendor/ocr/RapidOCR-json",
         "to": "ocr/RapidOCR-json"
       }
