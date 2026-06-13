@@ -159,6 +159,10 @@ export function App() {
       setFilterOpen(false);
       setClosePopupsToken((value) => value + 1);
     });
+    window.markdo.onOpenSettings(() => {
+      setSettingsOpen(true);
+      setFilterOpen(false);
+    });
     window.markdo.onOcrTodo((todo) => {
       runListTransition(() => {
         setTodos((current) => [todo, ...current]);
@@ -190,6 +194,7 @@ export function App() {
       );
     });
     window.markdo.onOcrStatus(setOcrStatus);
+    window.markdo.onShortcutStatus(setOcrStatus);
     window.markdo.onQuickAdd(() => {
       setFilter('all');
       window.setTimeout(() => inputRef.current?.focus(), 0);
@@ -199,9 +204,10 @@ export function App() {
   useEffect(() => {
     if (!ocrStatus) return;
     const shouldKeep = ocrStatus.includes('框选') || ocrStatus.includes('截图') || ocrStatus.includes('识别');
+    const isShortcutFailure = ocrStatus.includes('快捷键注册失败');
     const timer = window.setTimeout(() => {
       setOcrStatus(shouldKeep ? 'OCR 失败' : '');
-    }, shouldKeep ? 20000 : 3600);
+    }, shouldKeep ? 20000 : isShortcutFailure ? 6500 : 3600);
     return () => window.clearTimeout(timer);
   }, [ocrStatus]);
 

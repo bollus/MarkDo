@@ -101,7 +101,7 @@ export function loadSettings(): Settings {
   const defaults = {
     defaultDuration: 25,
     theme: 'system' as const,
-    ocrShortcut: 'CommandOrControl+Shift+O',
+    ocrShortcut: 'Alt+Shift+S',
     quickAddShortcut: 'CommandOrControl+Shift+Space'
   };
   if (!saved) return defaults;

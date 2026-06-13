@@ -48,6 +48,7 @@ interface Window {
     cancelOcrSelection: () => void;
     onCollapsed: (callback: (state: WindowDockState) => void) => void;
     onClosePopups: (callback: () => void) => void;
+    onOpenSettings: (callback: () => void) => void;
     onCollapseVisual: (callback: (state: { mode: 'panel-collapse' | 'strip-enter' | 'strip-collapse' | 'panel-enter' | 'blank'; edge: DockEdge }) => void) => void;
     onNoteInit: (callback: (todo: TodoItem) => void) => void;
     onNoteUpdated: (callback: (payload: Pick<TodoItem, 'id' | 'summary' | 'details'>) => void) => void;
@@ -55,6 +56,7 @@ interface Window {
     onDeadlineUpdated: (callback: (payload: Pick<TodoItem, 'id' | 'deadline'>) => void) => void;
     onOcrTodo: (callback: (todo: TodoItem) => void) => void;
     onOcrStatus: (callback: (message: string) => void) => void;
+    onShortcutStatus: (callback: (message: string) => void) => void;
     onQuickAddTodo: (callback: (todo: TodoItem) => void) => void;
     onQuickAdd: (callback: () => void) => void;
     onQuickAddOpen: (callback: () => void) => void;

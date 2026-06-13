@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('markdo', {
   cancelOcrSelection: () => ipcRenderer.send('ocr:selection-cancel'),
   onCollapsed: (callback) => ipcRenderer.on('window:collapsed', (_event, state) => callback(state)),
   onClosePopups: (callback) => ipcRenderer.on('window:closePopups', () => callback()),
+  onOpenSettings: (callback) => ipcRenderer.on('settings:open', () => callback()),
   onCollapseVisual: (callback) => ipcRenderer.on('window:collapseVisual', (_event, state) => callback(state)),
   onNoteInit: (callback) => ipcRenderer.on('note:init', (_event, todo) => callback(todo)),
   onNoteUpdated: (callback) => ipcRenderer.on('note:updated', (_event, payload) => callback(payload)),
@@ -33,6 +34,7 @@ contextBridge.exposeInMainWorld('markdo', {
   onDeadlineUpdated: (callback) => ipcRenderer.on('deadline:updated', (_event, payload) => callback(payload)),
   onOcrTodo: (callback) => ipcRenderer.on('ocr:todo', (_event, todo) => callback(todo)),
   onOcrStatus: (callback) => ipcRenderer.on('ocr:status', (_event, message) => callback(message)),
+  onShortcutStatus: (callback) => ipcRenderer.on('shortcut:status', (_event, message) => callback(message)),
   onQuickAddTodo: (callback) => ipcRenderer.on('quickAdd:todo', (_event, todo) => callback(todo)),
   onQuickAdd: (callback) => ipcRenderer.on('quickAdd:focus', () => callback()),
   onQuickAddOpen: (callback) => ipcRenderer.on('quickAdd:open', () => callback())

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, protocol, screen } = require('electron');
+const { app, BrowserWindow, dialog, globalShortcut, ipcMain, protocol, screen } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs/promises');
 const fsSync = require('fs');
@@ -50,7 +50,7 @@ let animationTimer = null;
 let isUserDragging = false;
 let visualTransition = null;
 let visualTransitionToken = 0;
-let ocrShortcut = 'CommandOrControl+Shift+O';
+let ocrShortcut = 'Alt+Shift+S';
 let quickAddShortcut = 'CommandOrControl+Shift+Space';
 let ocrRunning = false;
 let ocrSelectionWindow = null;
@@ -79,6 +79,47 @@ protocol.registerSchemesAsPrivileged([
 
 function emitOcrStatus(message) {
   mainWindow?.webContents.send('ocr:status', message);
+}
+
+function emitShortcutStatus(message) {
+  mainWindow?.webContents.send('shortcut:status', message);
+}
+
+function shortcutFailureParts(label, shortcut, error = null) {
+  const reason = error
+    ? `原因：${error.message || String(error)}`
+    : '原因：这个快捷键可能已被其他软件或系统占用，或当前系统不允许使用这个组合键。';
+  return {
+    message: `${label}快捷键注册失败：${shortcut}`,
+    detail: `${reason}\n\n请在设置里重新设置。`
+  };
+}
+
+function shortcutFailureMessage(label, shortcut, error = null) {
+  const parts = shortcutFailureParts(label, shortcut, error);
+  return `${parts.message}。${parts.detail.replace(/\n+/g, ' ')}`;
+}
+
+function showShortcutFailureDialog(label, shortcut, error = null) {
+  const { message, detail } = shortcutFailureParts(label, shortcut, error);
+  const parent = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
+  dialog.showMessageBox(parent, {
+    type: 'warning',
+    title: '快捷键注册失败',
+    message,
+    detail,
+    buttons: ['去设置里修改', '知道了'],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true
+  }).then((result) => {
+    if (result.response !== 0 || !mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    if (collapsed) expandWindow();
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.webContents.send('settings:open');
+  }).catch((dialogError) => log('show shortcut failure dialog failed', dialogError));
 }
 
 function getScreenshotModule() {
@@ -704,14 +745,22 @@ function expandWindow() {
 }
 
 async function runOcrCapture() {
+  log(`runOcrCapture requested hasMain=${Boolean(mainWindow)} running=${ocrRunning}`);
   if (!mainWindow || ocrRunning) return;
   ocrRunning = true;
   try {
+    emitOcrStatus('正在准备 OCR...');
+    log('OCR loading screenshot module');
     const screenshot = getScreenshotModule();
+    log(`OCR screenshot module loaded listDisplays=${typeof screenshot.listDisplays}`);
+    log('OCR loading sharp module');
     const sharp = getSharpModule();
+    log(`OCR sharp module loaded type=${typeof sharp}`);
     mainWindow.webContents.send('window:closePopups');
     emitOcrStatus('框选 OCR 区域...');
+    log('OCR selecting region');
     const selection = await selectOcrRegion();
+    log(`OCR selection result=${selection ? JSON.stringify(selection.rect) : 'null'}`);
     if (!selection) {
       emitOcrStatus('已取消 OCR');
       return;
@@ -721,7 +770,9 @@ async function runOcrCapture() {
       return;
     }
     emitOcrStatus('正在截图...');
+    log(`OCR capturing screen display=${selection.captureDisplay.id}`);
     const imageBuffer = await screenshot({ format: 'png', screen: selection.captureDisplay.id });
+    log(`OCR screenshot captured bytes=${imageBuffer.length}`);
     const croppedBuffer = await sharp(imageBuffer)
       .extract({
         left: selection.rect.x,
@@ -744,7 +795,9 @@ async function runOcrCapture() {
       .toBuffer();
     const screenshotDataUrl = `data:image/png;base64,${croppedBuffer.toString('base64')}`;
     emitOcrStatus('正在识别文字...');
+    log('OCR recognizing');
     const text = await recognizeWithPaddleOCR(ocrBuffer);
+    log(`OCR recognized length=${text.length}`);
     if (!text) {
       emitOcrStatus('未识别到文字');
       return;
@@ -764,7 +817,7 @@ async function runOcrCapture() {
     });
     emitOcrStatus('已生成待办');
   } catch (error) {
-    console.error('OCR capture failed:', error);
+    log('OCR capture failed', error);
     emitOcrStatus('OCR 失败');
   } finally {
     ocrRunning = false;
@@ -777,6 +830,7 @@ async function selectOcrRegion() {
     ocrSelectionWindow = null;
   }
 
+  const screenshot = getScreenshotModule();
   const cursor = screen.getCursorScreenPoint();
   const electronDisplay = screen.getDisplayNearestPoint(cursor);
   const captureDisplays = await screenshot.listDisplays();
@@ -901,27 +955,52 @@ function selectionHtml() {
 }
 
 function registerOcrShortcut(shortcut = ocrShortcut) {
-  globalShortcut.unregister(ocrShortcut);
-  ocrShortcut = shortcut || 'CommandOrControl+Shift+O';
+  const nextShortcut = shortcut || 'Alt+Shift+S';
+  const previousShortcut = ocrShortcut;
   try {
-    const registered = globalShortcut.register(ocrShortcut, runOcrCapture);
-    emitOcrStatus(registered ? `快捷键已设置：${ocrShortcut}` : `快捷键注册失败：${ocrShortcut}`);
+    if (nextShortcut === previousShortcut) globalShortcut.unregister(previousShortcut);
+    const registered = globalShortcut.register(nextShortcut, runOcrCapture);
+    log(`registerOcrShortcut shortcut=${nextShortcut} registered=${registered}`);
+    if (!registered) {
+      const message = shortcutFailureMessage('OCR', nextShortcut);
+      emitShortcutStatus(message);
+      emitOcrStatus(message);
+      showShortcutFailureDialog('OCR', nextShortcut);
+      return false;
+    }
+    if (nextShortcut !== previousShortcut) globalShortcut.unregister(previousShortcut);
+    ocrShortcut = nextShortcut;
+    emitOcrStatus(`快捷键已设置：${ocrShortcut}`);
     return registered;
   } catch (error) {
-    console.error('register OCR shortcut failed:', error);
-    emitOcrStatus('快捷键格式无效');
+    log('register OCR shortcut failed', error);
+    const message = shortcutFailureMessage('OCR', nextShortcut, error);
+    emitShortcutStatus(message);
+    emitOcrStatus(message);
+    showShortcutFailureDialog('OCR', nextShortcut, error);
     return false;
   }
 }
 
 function registerQuickAddShortcut(shortcut = quickAddShortcut) {
-  globalShortcut.unregister(quickAddShortcut);
-  quickAddShortcut = shortcut || 'CommandOrControl+Shift+Space';
+  const nextShortcut = shortcut || 'CommandOrControl+Shift+Space';
+  const previousShortcut = quickAddShortcut;
   try {
-    const registered = globalShortcut.register(quickAddShortcut, openQuickAddWindow);
+    if (nextShortcut === previousShortcut) globalShortcut.unregister(previousShortcut);
+    const registered = globalShortcut.register(nextShortcut, openQuickAddWindow);
+    log(`registerQuickAddShortcut shortcut=${nextShortcut} registered=${registered}`);
+    if (!registered) {
+      emitShortcutStatus(shortcutFailureMessage('快速添加', nextShortcut));
+      showShortcutFailureDialog('快速添加', nextShortcut);
+      return false;
+    }
+    if (nextShortcut !== previousShortcut) globalShortcut.unregister(previousShortcut);
+    quickAddShortcut = nextShortcut;
     return registered;
   } catch (error) {
-    console.error('register quick add shortcut failed:', error);
+    log('register quick add shortcut failed', error);
+    emitShortcutStatus(shortcutFailureMessage('快速添加', nextShortcut, error));
+    showShortcutFailureDialog('快速添加', nextShortcut, error);
     return false;
   }
 }
@@ -934,6 +1013,11 @@ function collapseIfDocked() {
   const { workArea } = currentDisplayForWindow();
   const nearest = nearestEdge(bounds, workArea);
   if (nearest.distance <= 1) collapseWindow(nearest.edge);
+}
+
+function getPreloadPath() {
+  if (app.isPackaged) return path.join(process.resourcesPath, 'app.asar', 'preload.js');
+  return path.join(__dirname, 'preload.js');
 }
 
 function createNoteWindow(todo) {
