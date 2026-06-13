@@ -14,6 +14,7 @@ export type Settings = {
   theme: 'light' | 'dark' | 'system';
   ocrShortcut: string;
   quickAddShortcut: string;
+  autoStart: boolean;
 };
 
 export function createTodo(title: string, deadline: string | null = null, summary = '', details = '', screenshotDataUrl?: string): TodoItem {
@@ -102,7 +103,8 @@ export function loadSettings(): Settings {
     defaultDuration: 25,
     theme: 'system' as const,
     ocrShortcut: 'Alt+Shift+S',
-    quickAddShortcut: 'CommandOrControl+Shift+Space'
+    quickAddShortcut: 'CommandOrControl+Shift+Space',
+    autoStart: true
   };
   if (!saved) return defaults;
   return { ...defaults, ...JSON.parse(saved) };

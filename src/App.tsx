@@ -101,6 +101,14 @@ export function App() {
     window.markdo.setQuickAddShortcut(settings.quickAddShortcut);
   }, [settings.quickAddShortcut]);
   useEffect(() => {
+    window.markdo.setAutoStart(settings.autoStart);
+  }, [settings.autoStart]);
+  useEffect(() => {
+    window.markdo.getAutoStart().then((autoStart) => {
+      setSettings((current) => (current.autoStart === autoStart ? current : { ...current, autoStart }));
+    }).catch(() => undefined);
+  }, []);
+  useEffect(() => {
     const applyTheme = () => {
       const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.classList.toggle('dark', settings.theme === 'dark' || (settings.theme === 'system' && systemDark));
@@ -445,6 +453,28 @@ export function App() {
                   </button>
                 );
               })}
+              <div className="my-1 h-px bg-slate-200 dark:bg-neutral-700" />
+              <button
+                type="button"
+                className="flex h-9 items-center justify-between gap-2 rounded-control px-2 text-left text-slate-600 transition-colors hover:bg-slate-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                onClick={() => setSettings((current) => ({ ...current, autoStart: !current.autoStart }))}
+              >
+                <span>开机自启动</span>
+                <span
+                  className={cn(
+                    'relative h-5 w-9 rounded-full transition-colors',
+                    settings.autoStart ? 'bg-primary dark:bg-neutral-200' : 'bg-slate-300 dark:bg-neutral-700'
+                  )}
+                  aria-hidden="true"
+                >
+                  <span
+                    className={cn(
+                      'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform dark:bg-neutral-900',
+                      settings.autoStart ? 'translate-x-[18px]' : 'translate-x-0.5'
+                    )}
+                  />
+                </span>
+              </button>
               <div className="my-1 h-px bg-slate-200 dark:bg-neutral-700" />
               <div className="grid gap-1.5 px-1 text-xs text-slate-500 dark:text-neutral-400">
                 <span>快速添加</span>

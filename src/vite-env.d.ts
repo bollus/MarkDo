@@ -44,6 +44,8 @@ interface Window {
     saveDeadline: (payload: Pick<TodoItem, 'id' | 'deadline'>) => void;
     setOcrShortcut: (shortcut: string) => Promise<boolean>;
     setQuickAddShortcut: (shortcut: string) => Promise<boolean>;
+    setAutoStart: (enabled: boolean) => Promise<boolean>;
+    getAutoStart: () => Promise<boolean>;
     createQuickTodo: (todo: TodoItem) => void;
     runOcr: () => Promise<void>;
     finishOcrSelection: (rect: { x: number; y: number; width: number; height: number }) => void;

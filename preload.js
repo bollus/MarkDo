@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('markdo', {
   saveDeadline: (payload) => ipcRenderer.send('deadline:save', payload),
   setOcrShortcut: (shortcut) => ipcRenderer.invoke('ocr:setShortcut', shortcut),
   setQuickAddShortcut: (shortcut) => ipcRenderer.invoke('quickAdd:setShortcut', shortcut),
+  setAutoStart: (enabled) => ipcRenderer.invoke('app:setAutoStart', enabled),
+  getAutoStart: () => ipcRenderer.invoke('app:getAutoStart'),
   createQuickTodo: (todo) => ipcRenderer.send('quickAdd:createTodo', todo),
   runOcr: () => ipcRenderer.invoke('ocr:capture'),
   finishOcrSelection: (rect) => ipcRenderer.send('ocr:selection', rect),

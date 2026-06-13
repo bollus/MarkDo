@@ -7,6 +7,7 @@ const path = require('path');
 
 const APP_DATA_DIR = path.join(app.getPath('appData'), 'MarkDo');
 const LOG_FILE = path.join(APP_DATA_DIR, 'markdo.log');
+const AUTOSTART_PREF_FILE = path.join(APP_DATA_DIR, 'autostart.json');
 fsSync.mkdirSync(APP_DATA_DIR, { recursive: true });
 app.setPath('userData', APP_DATA_DIR);
 app.setPath('cache', path.join(APP_DATA_DIR, 'Cache'));
@@ -58,6 +59,65 @@ let pendingDeadlinePayload = null;
 let screenshotModule = null;
 let sharpModule = null;
 let isAppQuitting = false;
+
+function readAutoStartPreference() {
+  try {
+    if (!fsSync.existsSync(AUTOSTART_PREF_FILE)) return true;
+    const parsed = JSON.parse(fsSync.readFileSync(AUTOSTART_PREF_FILE, 'utf8'));
+    return parsed.autoStart !== false;
+  } catch (error) {
+    log('readAutoStartPreference failed', error);
+    return true;
+  }
+}
+
+function writeAutoStartPreference(enabled) {
+  try {
+    fsSync.writeFileSync(AUTOSTART_PREF_FILE, JSON.stringify({ autoStart: Boolean(enabled) }), 'utf8');
+  } catch (error) {
+    log('writeAutoStartPreference failed', error);
+  }
+}
+
+function cleanupLegacyAutoStartEntries() {
+  if (process.platform !== 'win32') return;
+  execFile('reg', [
+    'delete',
+    'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run',
+    '/v',
+    'MarkDo',
+    '/f'
+  ], { windowsHide: true }, (error) => {
+    if (error && error.code !== 1) log('cleanup legacy MarkDo autostart failed', error);
+    else log('cleanup legacy MarkDo autostart complete');
+  });
+}
+
+function setAutoStart(enabled) {
+  const value = Boolean(enabled);
+  writeAutoStartPreference(value);
+  cleanupLegacyAutoStartEntries();
+  try {
+    app.setLoginItemSettings({
+      openAtLogin: value,
+      path: process.execPath
+    });
+    log(`setAutoStart enabled=${value} path=${process.execPath}`);
+    return true;
+  } catch (error) {
+    log('setAutoStart failed', error);
+    return false;
+  }
+}
+
+function getAutoStart() {
+  try {
+    return app.getLoginItemSettings({ path: process.execPath }).openAtLogin;
+  } catch (error) {
+    log('getAutoStart failed', error);
+    return readAutoStartPreference();
+  }
+}
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
@@ -1210,6 +1270,8 @@ ipcMain.handle('window:setAlwaysOnTop', (_event, value) => {
 });
 ipcMain.handle('ocr:setShortcut', (_event, shortcut) => registerOcrShortcut(shortcut));
 ipcMain.handle('quickAdd:setShortcut', (_event, shortcut) => registerQuickAddShortcut(shortcut));
+ipcMain.handle('app:setAutoStart', (_event, enabled) => setAutoStart(enabled));
+ipcMain.handle('app:getAutoStart', () => getAutoStart());
 ipcMain.handle('ocr:capture', runOcrCapture);
 ipcMain.handle('note:open', (_event, todo) => createNoteWindow(todo));
 ipcMain.handle('image:open', (_event, dataUrl) => createImageWindow(dataUrl));
@@ -1231,6 +1293,7 @@ app.whenReady().then(() => {
   isAppQuitting = false;
   log('app ready');
   registerRendererProtocol();
+  setAutoStart(readAutoStartPreference());
   createMainWindow();
   registerOcrShortcut();
   registerQuickAddShortcut();
