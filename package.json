@@ -1,6 +1,6 @@
 {
   "name": "markdo",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "A magnetic always-on-top desktop todo tool.",
   "main": "main.js",
   "scripts": {
