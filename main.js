@@ -4,6 +4,7 @@ const fs = require('fs/promises');
 const fsSync = require('fs');
 const os = require('os');
 const path = require('path');
+const { pathToFileURL } = require('url');
 
 const APP_DATA_DIR = path.join(app.getPath('appData'), 'MarkDo');
 const LOG_FILE = path.join(APP_DATA_DIR, 'markdo.log');
@@ -116,7 +117,12 @@ function loadRenderer(window, page = 'index.html', query = null) {
     window.loadURL(url.toString()).catch((error) => log(`loadURL failed: ${url.toString()}`, error));
   } else {
     const file = rendererFile(page);
-    window.loadFile(file, query ? { query } : undefined).catch((error) => log(`loadFile failed: ${file}`, error));
+    const url = pathToFileURL(file);
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => url.searchParams.set(key, value));
+    }
+    log(`loadRenderer file=${file} exists=${fsSync.existsSync(file)} url=${url.toString()}`);
+    window.loadURL(url.toString()).catch((error) => log(`loadRenderer failed: ${url.toString()}`, error));
   }
 }
 
