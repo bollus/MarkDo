@@ -2,3 +2,11 @@ node_modules/
 dist/
 *.log
 .DS_Store
+/release/
+/scripts/
+/package-lock.json
+/.idea/.gitignore
+/.idea/MarkDo.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
