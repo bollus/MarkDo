@@ -4,7 +4,6 @@ dist/
 .DS_Store
 /release/
 /scripts/
-/package-lock.json
 /.idea/.gitignore
 /.idea/MarkDo.iml
 /.idea/misc.xml
