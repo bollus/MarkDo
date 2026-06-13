@@ -1,0 +1,589 @@
+@font-face {
+  font-family: "Chiron GoRound TC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./assets/fonts/ChironGoRoundTC-400.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Chiron GoRound TC";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("./assets/fonts/ChironGoRoundTC-500.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Chiron GoRound TC";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("./assets/fonts/ChironGoRoundTC-600.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Chiron GoRound TC";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("./assets/fonts/ChironGoRoundTC-700.ttf") format("truetype");
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  font-family: "Chiron GoRound TC", "Microsoft YaHei UI", "Segoe UI Variable", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.time-input-clean::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.time-input-clean::-webkit-inner-spin-button,
+.time-input-clean::-webkit-clear-button {
+  display: none;
+}
+
+@keyframes edge-glow {
+  from {
+    opacity: 0.45;
+    filter: saturate(1) brightness(1);
+  }
+  to {
+    opacity: 1;
+    filter: saturate(1.28) brightness(1.12);
+  }
+}
+
+.animate-edge-glow {
+  animation: edge-glow 1100ms ease-in-out infinite alternate;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0.74;
+    transform: translate3d(var(--panel-enter-x, 10px), var(--panel-enter-y, 0), 0) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes panel-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(var(--panel-exit-x, 12px), var(--panel-exit-y, 0), 0) scale(0.94);
+  }
+}
+
+.animate-panel-in {
+  animation: panel-in 115ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: right center;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.animate-panel-out {
+  animation: panel-out 115ms cubic-bezier(0.4, 0, 1, 1) both;
+  transform-origin: right center;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.motion-lite {
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+::view-transition-group(*) {
+  animation-duration: 190ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(*),
+::view-transition-new(*) {
+  height: 100%;
+}
+
+@keyframes css-panel-collapse {
+  0% {
+    width: 390px;
+    height: 680px;
+  }
+  100% {
+    width: var(--panel-zero-width);
+    height: var(--panel-zero-height);
+  }
+}
+
+@keyframes css-panel-enter {
+  0% {
+    width: var(--panel-zero-width);
+    height: var(--panel-zero-height);
+  }
+  100% {
+    width: 390px;
+    height: 680px;
+  }
+}
+
+@keyframes css-strip-enter {
+  0% {
+    width: var(--strip-zero-width);
+    height: var(--strip-zero-height);
+  }
+  100% {
+    width: var(--strip-full-width);
+    height: var(--strip-full-height);
+  }
+}
+
+@keyframes css-strip-collapse {
+  0% {
+    width: var(--strip-full-width);
+    height: var(--strip-full-height);
+  }
+  100% {
+    width: var(--strip-zero-width);
+    height: var(--strip-zero-height);
+  }
+}
+
+.markdo-panel-shell {
+  width: 390px;
+  height: 680px;
+  max-width: 100vw;
+  max-height: 100vh;
+  min-width: 0;
+  overflow: hidden;
+  overflow-x: clip;
+}
+
+.markdo-panel-fixed {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.markdo-25d-outer {
+    border: 2px solid rgba(239, 239, 239);
+  background: rgb(253, 253, 253);
+}
+
+.markdo-25d-inner {
+    border: 0;
+  background: rgba(246, 246, 246);
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 0 1px 0 rgba(244, 244, 244);
+}
+
+.dark .markdo-25d-outer {
+    border: 2px solid rgb(37, 37, 37);
+  background: rgb(53, 53, 53);
+}
+
+.dark .markdo-25d-inner {
+  background: rgba(42, 42, 42);
+  box-shadow:
+    0 0 1px 0 rgba(44, 44, 44);
+}
+
+.markdo-25d-subtle-outer {
+  border: 0;
+  background: rgb(253, 253, 253);
+}
+
+.markdo-25d-subtle-inner {
+  border: 0;
+  background: rgb(246, 246, 246);
+  box-shadow:
+    0 0 1px 0 rgb(244, 244, 244);
+}
+
+.dark .markdo-25d-subtle-outer {
+  background: rgb(53, 53, 53);
+}
+
+.dark .markdo-25d-subtle-inner {
+  background: rgb(42, 42, 42);
+  box-shadow:
+    0 0 1px 0 rgb(44, 44, 44);
+}
+
+@keyframes ocr-border-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ocr-border-success {
+  0% {
+    opacity: 0.5;
+    transform: rotate(0deg);
+    background:
+      conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        oklch(0.86 0.2 92 / 0.22) 24deg,
+        oklch(0.86 0.2 92 / 1) 72deg,
+        transparent 112deg,
+        transparent 360deg
+      );
+  }
+  42% {
+    opacity: 0.95;
+    transform: rotate(170deg);
+    background:
+      conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        oklch(0.86 0.2 92 / 0.28) 34deg,
+        oklch(0.86 0.2 92 / 1) 150deg,
+        oklch(0.82 0.21 112 / 0.82) 235deg,
+        transparent 300deg,
+        transparent 360deg
+      );
+  }
+  68% {
+    opacity: 1;
+    transform: rotate(390deg);
+    background:
+      conic-gradient(
+        from 0deg,
+        oklch(0.82 0.21 112 / 0.42) 0deg,
+        oklch(0.79 0.23 132 / 0.92) 190deg,
+        oklch(0.73 0.25 152 / 1) 332deg,
+        transparent 360deg
+      );
+  }
+  78%,
+  88% {
+    opacity: 1;
+    transform: rotate(500deg);
+    background:
+      conic-gradient(
+        from 0deg,
+        oklch(0.73 0.25 152 / 0.9) 0deg,
+        oklch(0.73 0.25 152 / 1) 360deg
+      );
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(500deg);
+    background:
+      conic-gradient(
+        from 0deg,
+        oklch(0.73 0.25 152 / 0.32) 0deg,
+        oklch(0.73 0.25 152 / 0.08) 360deg
+      );
+  }
+}
+
+@keyframes ocr-border-pulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  18%,
+  58% {
+    opacity: 0.9;
+  }
+  38% {
+    opacity: 0.28;
+  }
+}
+
+.ocr-feedback-busy,
+.ocr-feedback-success,
+.ocr-feedback-empty,
+.ocr-feedback-error,
+.ocr-feedback-cancel {
+  position: relative;
+}
+
+.ocr-feedback-busy::before,
+.ocr-feedback-success::before,
+.ocr-feedback-empty::before,
+.ocr-feedback-error::before,
+.ocr-feedback-cancel::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -45%;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+.ocr-feedback-busy::before {
+  opacity: 0.88;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      oklch(0.86 0.2 92 / 0.24) 28deg,
+      oklch(0.86 0.2 92 / 1) 68deg,
+      transparent 112deg,
+      transparent 360deg
+    );
+  filter: drop-shadow(0 0 6px oklch(0.86 0.2 92 / 0.66));
+  animation: ocr-border-spin 1450ms linear infinite;
+}
+
+.ocr-feedback-success::before {
+  filter: drop-shadow(0 0 7px oklch(0.73 0.25 152 / 0.62));
+  animation: ocr-border-success 2200ms cubic-bezier(0.22, 0.8, 0.18, 1) both;
+}
+
+.ocr-feedback-empty::before {
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      oklch(0.8 0.16 64 / 0.78) 70deg,
+      transparent 132deg,
+      transparent 180deg,
+      oklch(0.8 0.16 64 / 0.72) 230deg,
+      transparent 292deg,
+      transparent 360deg
+    );
+  animation: ocr-border-pulse 1250ms ease-out both;
+}
+
+.ocr-feedback-error::before {
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      oklch(0.67 0.22 25 / 0.86) 54deg,
+      transparent 92deg,
+      transparent 145deg,
+      oklch(0.67 0.22 25 / 0.82) 188deg,
+      transparent 228deg,
+      transparent 280deg,
+      oklch(0.67 0.22 25 / 0.78) 318deg,
+      transparent 360deg
+    );
+  animation: ocr-border-pulse 1180ms ease-out both;
+}
+
+.ocr-feedback-cancel::before {
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      oklch(0.68 0.02 250 / 0.48) 80deg,
+      transparent 145deg,
+      transparent 360deg
+    );
+  animation: ocr-border-pulse 860ms ease-out both;
+}
+
+.animate-css-panel-collapse {
+  animation: css-panel-collapse 145ms cubic-bezier(0.4, 0, 1, 1) both;
+  will-change: width, height;
+  contain: layout paint;
+}
+
+.animate-css-panel-enter {
+  animation: css-panel-enter 175ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: width, height;
+  contain: layout paint;
+}
+
+.animate-css-strip-enter {
+  animation: css-strip-enter 115ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  overflow: hidden;
+  will-change: width, height;
+  contain: layout paint;
+}
+
+.animate-css-strip-collapse {
+  animation: css-strip-collapse 115ms cubic-bezier(0.4, 0, 1, 1) both;
+  overflow: hidden;
+  will-change: width, height;
+  contain: layout paint;
+}
+
+.animate-css-panel-collapse,
+.animate-css-panel-enter,
+.animate-css-strip-enter,
+.animate-css-strip-collapse {
+  position: absolute;
+}
+
+.dock-left .animate-css-panel-collapse,
+.dock-left .animate-css-panel-enter,
+.dock-left .animate-css-strip-enter,
+.dock-left .animate-css-strip-collapse {
+  left: 0;
+  top: 0;
+}
+
+.dock-right .animate-css-panel-collapse,
+.dock-right .animate-css-panel-enter,
+.dock-right .animate-css-strip-enter,
+.dock-right .animate-css-strip-collapse {
+  right: 0;
+  top: 0;
+}
+
+.dock-top .animate-css-panel-collapse,
+.dock-top .animate-css-panel-enter,
+.dock-top .animate-css-strip-enter,
+.dock-top .animate-css-strip-collapse {
+  left: 0;
+  top: 0;
+}
+
+.dock-bottom .animate-css-panel-collapse,
+.dock-bottom .animate-css-panel-enter,
+.dock-bottom .animate-css-strip-enter,
+.dock-bottom .animate-css-strip-collapse {
+  left: 0;
+  bottom: 0;
+}
+
+.dock-left .animate-css-panel-collapse,
+.dock-left .animate-css-panel-enter,
+.dock-left .animate-css-panel-collapse .markdo-panel-fixed,
+.dock-left .animate-css-panel-enter .markdo-panel-fixed {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-width: 0;
+}
+
+.dock-right .animate-css-panel-collapse,
+.dock-right .animate-css-panel-enter,
+.dock-right .animate-css-panel-collapse .markdo-panel-fixed,
+.dock-right .animate-css-panel-enter .markdo-panel-fixed {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right-width: 0;
+}
+
+.dock-top .animate-css-panel-collapse,
+.dock-top .animate-css-panel-enter,
+.dock-top .animate-css-panel-collapse .markdo-panel-fixed,
+.dock-top .animate-css-panel-enter .markdo-panel-fixed {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top-width: 0;
+}
+
+.dock-bottom .animate-css-panel-collapse,
+.dock-bottom .animate-css-panel-enter,
+.dock-bottom .animate-css-panel-collapse .markdo-panel-fixed,
+.dock-bottom .animate-css-panel-enter .markdo-panel-fixed {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-width: 0;
+}
+
+.dock-left {
+  --panel-enter-x: -10px;
+  --panel-exit-x: -12px;
+  --panel-zero-width: 0px;
+  --panel-zero-height: 680px;
+  --strip-zero-width: 0px;
+  --strip-zero-height: 168px;
+  --strip-full-width: 42px;
+  --strip-full-height: 168px;
+}
+
+.dock-right {
+  --panel-enter-x: 10px;
+  --panel-exit-x: 12px;
+  --panel-zero-width: 0px;
+  --panel-zero-height: 680px;
+  --strip-zero-width: 0px;
+  --strip-zero-height: 168px;
+  --strip-full-width: 42px;
+  --strip-full-height: 168px;
+}
+
+.dock-top {
+  --panel-enter-x: 0;
+  --panel-enter-y: -10px;
+  --panel-exit-x: 0;
+  --panel-exit-y: -12px;
+  --panel-zero-width: 390px;
+  --panel-zero-height: 0px;
+  --strip-zero-width: 168px;
+  --strip-zero-height: 0px;
+  --strip-full-width: 168px;
+  --strip-full-height: 42px;
+}
+
+.dock-bottom {
+  --panel-enter-x: 0;
+  --panel-enter-y: 10px;
+  --panel-exit-x: 0;
+  --panel-exit-y: 12px;
+  --panel-zero-width: 390px;
+  --panel-zero-height: 0px;
+  --strip-zero-width: 168px;
+  --strip-zero-height: 0px;
+  --strip-full-width: 168px;
+  --strip-full-height: 42px;
+}
+
+.dock-left .animate-panel-in,
+.dock-left .animate-panel-out {
+  transform-origin: left center;
+}
+
+.dock-right .animate-panel-in,
+.dock-right .animate-panel-out {
+  transform-origin: right center;
+}
+
+.dock-top .animate-panel-in,
+.dock-top .animate-panel-out {
+  transform-origin: center top;
+}
+
+.dock-bottom .animate-panel-in,
+.dock-bottom .animate-panel-out {
+  transform-origin: center bottom;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.42);
+  border-radius: 999px;
+}
