@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('markdo', {
   collapseIfDocked: () => ipcRenderer.invoke('window:collapseIfDocked'),
   minimize: () => ipcRenderer.invoke('window:minimize'),
   close: () => ipcRenderer.invoke('window:close'),
+  quitConfirm: () => ipcRenderer.invoke('app:quitConfirm'),
+  quitNow: () => ipcRenderer.invoke('app:quitNow'),
   minimizeCurrent: () => ipcRenderer.invoke('window:minimizeCurrent'),
   closeCurrent: () => ipcRenderer.invoke('window:closeCurrent'),
   hideCurrent: () => ipcRenderer.invoke('window:hideCurrent'),

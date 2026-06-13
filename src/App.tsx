@@ -12,7 +12,7 @@ import {
   SortableContext,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
-import { CheckCircle2, ChevronsLeft, Clipboard, List, Moon, Plus, RotateCcw, Settings as SettingsIcon, Sun, SunMoon } from 'lucide-react';
+import { CheckCircle2, ChevronsLeft, Clipboard, List, Moon, Plus, Power, RotateCcw, Settings as SettingsIcon, Sun, SunMoon } from 'lucide-react';
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { EdgeGlow } from './components/EdgeGlow';
@@ -77,6 +77,7 @@ export function App() {
   const [draggingWindow, setDraggingWindow] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [quitConfirmOpen, setQuitConfirmOpen] = useState(false);
   const [closePopupsToken, setClosePopupsToken] = useState(0);
   const [recordingShortcut, setRecordingShortcut] = useState<'ocr' | 'quickAdd' | null>(null);
   const [ocrStatus, setOcrStatus] = useState('');
@@ -157,6 +158,7 @@ export function App() {
     window.markdo.onClosePopups(() => {
       setSettingsOpen(false);
       setFilterOpen(false);
+      setQuitConfirmOpen(false);
       setClosePopupsToken((value) => value + 1);
     });
     window.markdo.onOpenSettings(() => {
@@ -471,6 +473,44 @@ export function App() {
                 >
                   {recordingShortcut === 'ocr' ? '按下快捷键...' : displayShortcut(settings.ocrShortcut)}
                 </button>
+              </div>
+              <div className="my-1 h-px bg-slate-200 dark:bg-neutral-700" />
+              <button
+                type="button"
+                className="flex h-9 items-center gap-2 rounded-control px-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/12"
+                onClick={() => {
+                  setSettingsOpen(false);
+                  setQuitConfirmOpen(true);
+                }}
+              >
+                <Power className="h-4 w-4" />
+                退出 MarkDo
+              </button>
+            </div>
+          )}
+
+          {quitConfirmOpen && (
+            <div className="absolute inset-0 z-50 grid place-items-center bg-black/18 px-5">
+              <div className="w-full max-w-[300px] rounded-card border border-slate-200 bg-white p-4 text-slate-900 shadow-xl dark:border-neutral-700 dark:bg-neutral-850 dark:text-neutral-100">
+                <div className="mb-2 flex items-center gap-2 text-base font-semibold">
+                  <Power className="h-4 w-4 text-red-500" />
+                  退出 MarkDo
+                </div>
+                <p className="mb-4 text-sm leading-relaxed text-slate-600 dark:text-neutral-300">
+                  退出后，桌面待办窗口、快速添加和 OCR 快捷键都会停止工作。
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setQuitConfirmOpen(false)}>
+                    取消
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-red-600 text-white shadow-none hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-400"
+                    onClick={() => window.markdo.quitNow()}
+                  >
+                    退出
+                  </Button>
+                </div>
               </div>
             </div>
           )}

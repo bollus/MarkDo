@@ -29,6 +29,8 @@ interface Window {
     collapseIfDocked: () => Promise<void>;
     minimize: () => Promise<void>;
     close: () => Promise<void>;
+    quitConfirm: () => Promise<boolean>;
+    quitNow: () => Promise<void>;
     minimizeCurrent: () => Promise<void>;
     closeCurrent: () => Promise<void>;
     hideCurrent: () => Promise<void>;

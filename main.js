@@ -123,6 +123,44 @@ function showShortcutFailureDialog(label, shortcut, error = null) {
   }).catch((dialogError) => log('show shortcut failure dialog failed', dialogError));
 }
 
+function closeAuxiliaryWindows() {
+  for (const noteWindow of noteWindows.values()) {
+    if (!noteWindow.isDestroyed()) noteWindow.close();
+  }
+  noteWindows.clear();
+  if (quickAddWindow && !quickAddWindow.isDestroyed()) quickAddWindow.close();
+  if (deadlineWindow && !deadlineWindow.isDestroyed()) deadlineWindow.close();
+  if (ocrSelectionWindow && !ocrSelectionWindow.isDestroyed()) ocrSelectionWindow.close();
+}
+
+async function confirmAndQuit() {
+  const parent = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
+  const result = await dialog.showMessageBox(parent, {
+    type: 'warning',
+    title: '退出 MarkDo',
+    message: '确定要退出 MarkDo 吗？',
+    detail: '退出后，桌面待办窗口、快速添加和 OCR 快捷键都会停止工作。',
+    buttons: ['退出', '取消'],
+    defaultId: 1,
+    cancelId: 1,
+    noLink: true
+  });
+  if (result.response !== 0) return false;
+  isAppQuitting = true;
+  closeAuxiliaryWindows();
+  mainWindow?.close();
+  app.quit();
+  return true;
+}
+
+function quitNow() {
+  log('quitNow requested');
+  isAppQuitting = true;
+  closeAuxiliaryWindows();
+  mainWindow?.close();
+  app.quit();
+}
+
 function getScreenshotModule() {
   if (!screenshotModule) screenshotModule = require('screenshot-desktop');
   return screenshotModule;
@@ -270,13 +308,7 @@ function createMainWindow() {
     mainWindow = null;
     if (!isAppQuitting) {
       isAppQuitting = true;
-      for (const noteWindow of noteWindows.values()) {
-        if (!noteWindow.isDestroyed()) noteWindow.close();
-      }
-      noteWindows.clear();
-      if (quickAddWindow && !quickAddWindow.isDestroyed()) quickAddWindow.close();
-      if (deadlineWindow && !deadlineWindow.isDestroyed()) deadlineWindow.close();
-      if (ocrSelectionWindow && !ocrSelectionWindow.isDestroyed()) ocrSelectionWindow.close();
+      closeAuxiliaryWindows();
       app.quit();
     }
   });
@@ -1168,6 +1200,8 @@ ipcMain.handle('window:minimize', () => mainWindow?.minimize());
 ipcMain.handle('window:close', () => {
   mainWindow?.close();
 });
+ipcMain.handle('app:quitConfirm', confirmAndQuit);
+ipcMain.handle('app:quitNow', () => quitNow());
 ipcMain.handle('window:minimizeCurrent', (event) => BrowserWindow.fromWebContents(event.sender)?.minimize());
 ipcMain.handle('window:closeCurrent', (event) => BrowserWindow.fromWebContents(event.sender)?.close());
 ipcMain.handle('window:hideCurrent', (event) => BrowserWindow.fromWebContents(event.sender)?.hide());
