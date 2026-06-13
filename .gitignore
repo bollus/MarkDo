@@ -2,8 +2,9 @@ node_modules/
 dist/
 *.log
 .DS_Store
+__pycache__/
+*.pyc
 /release/
-/scripts/
 /.idea/.gitignore
 /.idea/MarkDo.iml
 /.idea/misc.xml

@@ -4,14 +4,29 @@ const fs = require('fs/promises');
 const fsSync = require('fs');
 const os = require('os');
 const path = require('path');
-const screenshot = require('screenshot-desktop');
-const sharp = require('sharp');
 
 const APP_DATA_DIR = path.join(app.getPath('appData'), 'MarkDo');
+const LOG_FILE = path.join(APP_DATA_DIR, 'markdo.log');
+fsSync.mkdirSync(APP_DATA_DIR, { recursive: true });
 app.setPath('userData', APP_DATA_DIR);
 app.setPath('cache', path.join(APP_DATA_DIR, 'Cache'));
 app.commandLine.appendSwitch('disk-cache-dir', path.join(APP_DATA_DIR, 'ChromiumCache'));
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+
+function log(message, error = null) {
+  const detail = error ? `\n${error.stack || error.message || String(error)}` : '';
+  const line = `[${new Date().toISOString()}] ${message}${detail}\n`;
+  try {
+    fsSync.appendFileSync(LOG_FILE, line, 'utf8');
+  } catch {
+    // Logging must never stop app startup.
+  }
+  if (error) console.error(message, error);
+  else console.log(message);
+}
+
+process.on('uncaughtException', (error) => log('uncaughtException', error));
+process.on('unhandledRejection', (error) => log('unhandledRejection', error));
 
 const EXPANDED_SIZE = { width: 390, height: 680 };
 const SIDE_STRIP_SIZE = { width: 42, height: 168 };
@@ -40,14 +55,27 @@ let quickAddShortcut = 'CommandOrControl+Shift+Space';
 let ocrRunning = false;
 let ocrSelectionWindow = null;
 let pendingDeadlinePayload = null;
+let screenshotModule = null;
+let sharpModule = null;
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
+  log('second instance detected, quitting');
   app.quit();
 }
 
 function emitOcrStatus(message) {
   mainWindow?.webContents.send('ocr:status', message);
+}
+
+function getScreenshotModule() {
+  if (!screenshotModule) screenshotModule = require('screenshot-desktop');
+  return screenshotModule;
+}
+
+function getSharpModule() {
+  if (!sharpModule) sharpModule = require('sharp');
+  return sharpModule;
 }
 
 function beginVisualTransition(type) {
@@ -85,13 +113,15 @@ function loadRenderer(window, page = 'index.html', query = null) {
     if (query) {
       Object.entries(query).forEach(([key, value]) => url.searchParams.set(key, value));
     }
-    window.loadURL(url.toString());
+    window.loadURL(url.toString()).catch((error) => log(`loadURL failed: ${url.toString()}`, error));
   } else {
-    window.loadFile(rendererFile(page), query ? { query } : undefined);
+    const file = rendererFile(page);
+    window.loadFile(file, query ? { query } : undefined).catch((error) => log(`loadFile failed: ${file}`, error));
   }
 }
 
 function createMainWindow() {
+  log(`createMainWindow packaged=${app.isPackaged} appPath=${app.getAppPath()} resourcesPath=${process.resourcesPath}`);
   const display = screen.getPrimaryDisplay();
   const { workArea } = display;
 
@@ -125,11 +155,13 @@ function createMainWindow() {
   }
   loadRenderer(mainWindow, 'index.html');
   mainWindow.once('ready-to-show', () => {
+    log('mainWindow ready-to-show');
     mainWindow.center();
     mainWindow.show();
     mainWindow.focus();
   });
   mainWindow.webContents.once('did-finish-load', () => {
+    log('mainWindow did-finish-load');
     mainWindow.center();
     mainWindow.show();
     mainWindow.moveTop();
@@ -141,6 +173,7 @@ function createMainWindow() {
     if (!collapsed) lastExpandedBounds = mainWindow.getBounds();
   });
   mainWindow.on('closed', () => {
+    log('mainWindow closed');
     mainWindow = null;
   });
 }
@@ -523,21 +556,10 @@ async function recognizeWithPaddleOCR(imageBuffer) {
   try {
     const bundledText = await recognizeWithBundledRapidOcr(imagePath);
     if (bundledText !== null) return bundledText;
-
-    const { stdout } = await execFileAsync('python', [path.join(__dirname, 'scripts', 'paddle_ocr_engine.py'), imagePath], {
-      windowsHide: true,
-      maxBuffer: 1024 * 1024 * 8
-    });
-    const parsed = JSON.parse(stdout.trim() || '{}');
-    return String(parsed.text || '').trim();
+    throw new Error('Bundled RapidOCR-json engine was not found.');
   } catch (error) {
-    console.error('PaddleOCR failed, falling back to RapidOCR:', error.stderr || error.message);
-    const { stdout } = await execFileAsync('python', [path.join(__dirname, 'scripts', 'rapidocr.py'), imagePath], {
-      windowsHide: true,
-      maxBuffer: 1024 * 1024 * 8
-    });
-    const parsed = JSON.parse(stdout.trim() || '{}');
-    return String(parsed.text || '').trim();
+    log('OCR failed', error);
+    throw error;
   } finally {
     await fs.unlink(imagePath).catch(() => {});
   }
@@ -634,6 +656,8 @@ async function runOcrCapture() {
   if (!mainWindow || ocrRunning) return;
   ocrRunning = true;
   try {
+    const screenshot = getScreenshotModule();
+    const sharp = getSharpModule();
     mainWindow.webContents.send('window:closePopups');
     emitOcrStatus('框选 OCR 区域...');
     const selection = await selectOcrRegion();
@@ -1028,10 +1052,11 @@ ipcMain.on('note:save', (event, payload) => {
 });
 
 app.whenReady().then(() => {
+  log('app ready');
   createMainWindow();
   registerOcrShortcut();
   registerQuickAddShortcut();
-});
+}).catch((error) => log('app.whenReady failed', error));
 
 app.on('second-instance', () => {
   if (!mainWindow || mainWindow.isDestroyed()) return;

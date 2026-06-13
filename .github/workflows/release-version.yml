@@ -25,6 +25,9 @@ jobs:
     name: Bump package version and tag
     runs-on: windows-latest
     if: github.actor != 'github-actions[bot]'
+    env:
+      ELECTRON_CACHE: ${{ github.workspace }}\.cache\electron
+      ELECTRON_BUILDER_CACHE: ${{ github.workspace }}\.cache\electron-builder
 
     steps:
       - name: Checkout
@@ -38,6 +41,16 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      - name: Restore Electron caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.ELECTRON_CACHE }}
+            ${{ env.ELECTRON_BUILDER_CACHE }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
 
       - name: Configure Git
         shell: pwsh
